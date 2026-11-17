@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.models.schemas import SummarizeRequest, SummarizeResponse
+from app.services.gemini_service import generate_summary
 
 # Create Fast API Application
 app = FastAPI(
