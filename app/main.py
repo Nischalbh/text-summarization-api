@@ -1,7 +1,8 @@
-from fastapi import FastAPI
 from app.models.schemas import SummarizeRequest, SummarizeResponse
 from app.services.summarizer import summarize_long_text
 from app.text_chunker import split_text_into_chunks
+from fastapi import FastAPI, Depends
+from app.core.security import verify_api_key
 
 # Create Fast API Application
 app = FastAPI(
@@ -25,9 +26,13 @@ def health_check():
     return {"status": "healthy", "application": "Text Summarization API"}
 
 
-@app.post("/api/v1/summarize", response_model=SummarizeResponse)
+@app.post(
+    "/api/v1/summarize",
+    response_model=SummarizeResponse,
+    dependencies=[Depends(verify_api_key)],
+)
 def summarize(request: SummarizeRequest):
-    # Split long text into chunks, summarize each, then merge into one final summary.
+    # Split long text into chunks
     chunks = split_text_into_chunks(request.text)
     summary = summarize_long_text(
         text=request.text,
