@@ -1,11 +1,10 @@
 from fastapi import FastAPI
 from app.models.schemas import SummarizeRequest, SummarizeResponse
-from app.services.gemini_service import generate_summary
 
 # Create Fast API Application
 app = FastAPI(
     title="Text Summarization API",
-    description="An AI-powered API that summarizes long text using Gemini.",
+    description="An AI-powered API that summarizes long text.",
 )
 
 
@@ -26,16 +25,10 @@ def health_check():
 
 @app.post("/api/v1/summarize", response_model=SummarizeResponse)
 def summarize(request: SummarizeRequest):
-    # Summarize using Gemini AI
-    summary = generate_summary(
-        text=request.text,
-        length=request.length,
-        style=request.style,
-    )
     return {
-        "summary": summary,
+        "summary": "AI-generated summary will appear here.",
         "original_length": len(request.text),
-        "summary_length": len(summary),
+        "summary_length": 100,
         "chunks_processed": 1,
         "style": request.style,
         "length": request.length,
