@@ -11,8 +11,22 @@ api_key = os.getenv("GEMINI_API_KEY")
 # Model can be overridden from .env; the default is a currently available model.
 model_name = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
 
-# Create gemini client with a timeout so a slow/unavailable model cannot hang the API.
-client = genai.Client(api_key=api_key, http_options={"timeout": 20000})
+# Give the upstream model enough time to respond and retry transient failures
+# (504 DEADLINE_EXCEEDED, 429, 5xx) instead of failing the whole request.
+timeout_ms = int(os.getenv("GEMINI_TIMEOUT_MS", "60000"))
+retry_attempts = int(os.getenv("GEMINI_RETRY_ATTEMPTS", "3"))
+
+client = genai.Client(
+    api_key=api_key,
+    http_options={
+        "timeout": timeout_ms,
+        "retry_options": {
+            "attempts": retry_attempts,
+            "initial_delay": 1,
+            "max_delay": 10,
+        },
+    },
+)
 
 LENGTH_INSTRUCTIONS = {
     "short": "Write a concise summary in 2-3 sentences.",

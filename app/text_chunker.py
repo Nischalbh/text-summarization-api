@@ -13,7 +13,7 @@ def split_text_into_chunks(text: str, max_chars: int = 5000):
         added_length = len(word) + (1 if current_chunk else 0)
 
         # Check whether adding this word exceeds the limit
-        if current_length + added_length > max_chars:
+        if current_chunk and current_length + added_length > max_chars:
 
             # Save the current chunk
             chunks.append(" ".join(current_chunk))
