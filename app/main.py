@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.models.schemas import SummarizeRequest, SummarizeResponse
-from app.services.gemini_service import combine_summaries, generate_summary
+from app.services.summarizer import summarize_long_text
 from app.text_chunker import split_text_into_chunks
 
 # Create Fast API Application
@@ -29,23 +29,11 @@ def health_check():
 def summarize(request: SummarizeRequest):
     # Split long text into chunks, summarize each, then merge into one final summary.
     chunks = split_text_into_chunks(request.text)
-    chunk_summaries = [
-        generate_summary(
-            text=chunk,
-            length=request.length,
-            style=request.style,
-        )
-        for chunk in chunks
-    ]
-
-    if len(chunk_summaries) == 1:
-        summary = chunk_summaries[0]
-    else:
-        summary = combine_summaries(
-            summaries=chunk_summaries,
-            length=request.length,
-            style=request.style,
-        )
+    summary = summarize_long_text(
+        text=request.text,
+        length=request.length,
+        style=request.style,
+    )
 
     return {
         "summary": summary,
