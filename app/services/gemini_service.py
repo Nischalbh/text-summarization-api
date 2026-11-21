@@ -1,0 +1,99 @@
+import os
+from dotenv import load_dotenv
+from google import genai
+
+# Load environment variables
+load_dotenv()
+
+# gemini API Key
+api_key = os.getenv("GEMINI_API_KEY")
+
+# Model can be overridden from .env; the default is a currently available model.
+model_name = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+
+# Give the upstream model enough time to respond and retry transient failures
+# (504 DEADLINE_EXCEEDED, 429, 5xx) instead of failing the whole request.
+timeout_ms = int(os.getenv("GEMINI_TIMEOUT_MS", "60000"))
+retry_attempts = int(os.getenv("GEMINI_RETRY_ATTEMPTS", "3"))
+
+client = genai.Client(
+    api_key=api_key,
+    http_options={
+        "timeout": timeout_ms,
+        "retry_options": {
+            "attempts": retry_attempts,
+            "initial_delay": 1,
+            "max_delay": 10,
+        },
+    },
+)
+
+LENGTH_INSTRUCTIONS = {
+    "short": "Write a concise summary in 2-3 sentences.",
+    "medium": "Write a balanced summary in 1-2 paragraphs.",
+    "long": "Write a detailed summary covering all important information.",
+}
+
+STYLE_INSTRUCTIONS = {
+    "professional": "Use a clear, formal and professional tone.",
+    "casual": "Use friendly, simple and conversational language.",
+    "academic": "Use formal academic language and objective explanations.",
+    "bullet_points": "Present the summary as clear and organized bullet points.",
+}
+
+
+def generate_summary(text: str, length: str, style: str):
+    prompt = f"""
+    expert text summarization assistant.
+
+    TASK:
+    Summarize the provided text.
+
+    LENGTH:
+    {LENGTH_INSTRUCTIONS[length]}
+
+    STYLE:
+    {STYLE_INSTRUCTIONS[style]}
+
+    IMPORTANT RULES:
+    - Keep the original meaning.
+    - Do not invent facts.
+    - Include the most important information.
+    - Avoid unnecessary repetition.
+    - Return only the summary.
+
+    ORIGINAL TEXT:
+    {text}
+    """
+    response = client.models.generate_content(model=model_name, contents=prompt)
+    return response.text
+
+
+def combine_summaries(summaries: list[str], length: str, style: str):
+    """Merge partial chunk summaries into one coherent final summary."""
+    numbered_summaries = "\n".join(
+        f"{index}. {summary}" for index, summary in enumerate(summaries, start=1)
+    )
+    prompt = f"""
+    expert text summarization assistant.
+
+    TASK:
+    Combine the following partial summaries into ONE coherent final summary.
+
+    LENGTH:
+    {LENGTH_INSTRUCTIONS[length]}
+
+    STYLE:
+    {STYLE_INSTRUCTIONS[style]}
+
+    IMPORTANT RULES:
+    - Merge all key points into a single unified summary.
+    - Do not repeat the same information.
+    - Do not invent facts.
+    - Return only the final summary.
+
+    PARTIAL SUMMARIES:
+    {numbered_summaries}
+    """
+    response = client.models.generate_content(model=model_name, contents=prompt)
+    return response.text
