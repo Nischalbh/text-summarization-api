@@ -5,14 +5,19 @@ from dotenv import load_dotenv
 from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 
-# Load environment
+# Load environment variables
 load_dotenv()
 
-# Define API
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+# Define API key authentication scheme
+api_key_header = APIKeyHeader(
+    name="X-API-Key",
+    scheme_name="API Key Authentication",
+    description="Enter your API key to access protected endpoints.",
+    auto_error=False,
+)
 
 
-# Verify  API key
+# Verify API key
 async def verify_api_key(api_key: str | None = Security(api_key_header)):
     expected_api_key = os.getenv("CLIENT_API_KEY")
 

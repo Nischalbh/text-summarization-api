@@ -92,11 +92,73 @@ def health_check():
     """,
     tags=["Summarization"],
     responses={
-        401: {"description": "Missing or invalid API key."},
-        422: {"description": "Input validation error."},
-        429: {"description": "Rate limit exceeded."},
-        502: {"description": "External Gemini API service error."},
-        500: {"description": "Unexpected internal server error."},
+        200: {
+            "description": "Text summarized successfully.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "summary": "AI improves efficiency through automation.",
+                        "original_length": 150,
+                        "summary_length": 55,
+                        "chunks_processed": 1,
+                        "style": "professional",
+                        "length": "short",
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Missing or invalid API key.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Invalid or missing API key"}
+                }
+            },
+        },
+        422: {
+            "description": "Input validation error.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": [
+                            {
+                                "type": "string_too_short",
+                                "loc": ["body", "text"],
+                                "msg": "String should have at least 50 characters",
+                            }
+                        ]
+                    }
+                }
+            },
+        },
+        429: {
+            "description": "Rate limit exceeded.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Rate limit exceeded. Try again after one minute."
+                    }
+                }
+            },
+        },
+        502: {
+            "description": "Gemini API service error.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Summarization service is unavailable (upstream error 503)."
+                    }
+                }
+            },
+        },
+        500: {
+            "description": "Unexpected internal server error.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "An unexpected error occurred."}
+                }
+            },
+        },
     },
 )
 def summarize(request: SummarizeRequest):
