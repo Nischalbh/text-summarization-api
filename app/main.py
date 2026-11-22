@@ -7,15 +7,46 @@ from app.text_chunker import split_text_into_chunks
 from app.core.rate_limiter import rate_limit
 from app.core.logger import logger
 
+# API tags for Swagger documentation
+tags_metadata = [
+    {
+        "name": "General",
+        "description": "General application information and health checks.",
+    },
+    {
+        "name": "Summarization",
+        "description": "AI-powered text summarization operations.",
+    },
+]
+
+
 # Create FastAPI application
 app = FastAPI(
     title="Text Summarization API",
-    description="An AI-powered API that summarizes long text using Gemini.",
+    description="""
+    ## AI-Powered Text Summarization
+
+    A REST API built with FastAPI and Google Gemini.
+
+    ### Features
+    - Summarize long text into short, medium, or long summaries.
+    - Choose different writing styles.
+    - API key authentication.
+    - Redis-based rate limiting.
+    - Long text processing and error handling.
+    """,
+    version="1.0.0",
+    openapi_tags=tags_metadata,
 )
 
 
 # Home endpoint
-@app.get("/")
+@app.get(
+    "/",
+    summary="API Welcome",
+    description="Returns a welcome message and application status.",
+    tags=["General"],
+)
 def home():
     logger.info("Home endpoint accessed")
 
@@ -26,7 +57,12 @@ def home():
 
 
 # Health check endpoint
-@app.get("/health")
+@app.get(
+    "/health",
+    summary="Health Check",
+    description="Checks whether the API application is running.",
+    tags=["General"],
+)
 def health_check():
     logger.info("Health check endpoint accessed")
 
@@ -41,6 +77,27 @@ def health_check():
     "/api/v1/summarize",
     response_model=SummarizeResponse,
     dependencies=[Depends(rate_limit)],
+    summary="Summarize Text",
+    description="""
+    Generates an AI-powered summary of the provided text.
+
+    **Requirements:**
+    - Minimum text length: 50 characters.
+    - Valid API key required.
+    - Maximum 10 requests per minute per API key.
+
+    **Supported lengths:** short, medium, long.
+
+    **Supported styles:** professional, casual, academic, bullet_points.
+    """,
+    tags=["Summarization"],
+    responses={
+        401: {"description": "Missing or invalid API key."},
+        422: {"description": "Input validation error."},
+        429: {"description": "Rate limit exceeded."},
+        502: {"description": "External Gemini API service error."},
+        500: {"description": "Unexpected internal server error."},
+    },
 )
 def summarize(request: SummarizeRequest):
 
@@ -50,10 +107,7 @@ def summarize(request: SummarizeRequest):
         # Split long text into chunks
         chunks = split_text_into_chunks(request.text)
 
-        logger.info(
-            "Text split into %d chunks",
-            len(chunks),
-        )
+        logger.info("Text split into %d chunks", len(chunks))
 
         # Generate summary
         summary = summarize_long_text(
